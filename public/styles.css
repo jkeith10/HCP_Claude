@@ -113,6 +113,10 @@ body {
   background: #4ade80;
   box-shadow: 0 0 8px #4ade80;
 }
+.actions {
+  display: flex;
+  gap: 8px;
+}
 .ghost {
   background: transparent;
   color: var(--text);
@@ -120,6 +124,88 @@ body {
   border-radius: 8px;
   padding: 6px 12px;
   font-size: 14px;
+}
+
+/* ---- Settings modal ---- */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 20;
+}
+.modal-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  width: 100%;
+  max-width: 380px;
+}
+.modal-card h3 {
+  margin: 0 0 14px;
+}
+.modal-card .row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  margin-bottom: 14px;
+}
+.modal-card .row input {
+  width: 20px;
+  height: 20px;
+}
+.modal-card .field {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.modal-card .field .val {
+  color: var(--text);
+}
+.modal-card select,
+.modal-card input[type='range'] {
+  width: 100%;
+  margin-top: 6px;
+}
+.modal-card select {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 15px;
+}
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.modal-buttons button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+}
+.modal-buttons .primary {
+  background: var(--accent-2);
+}
+.modal-buttons .secondary {
+  background: var(--panel-2);
+  border: 1px solid var(--border) !important;
+}
+.modal-card .hint {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 12px 0 0;
+  line-height: 1.4;
 }
 
 /* ---- Messages ---- */

@@ -54,16 +54,147 @@ function addTyping() {
   return div;
 }
 
+// --- Text-to-speech ---------------------------------------------------------
+const VOICE_KEY = 'hvac_voice_settings';
+const defaultVoiceSettings = { enabled: true, voiceURI: '', rate: 0.95, pitch: 1.05 };
+let voiceSettings = loadVoiceSettings();
+let availableVoices = [];
+
+// Names of known natural female voices across iOS/macOS/Android/Windows.
+const FEMALE_HINTS = [
+  'samantha', 'ava', 'allison', 'susan', 'karen', 'serena', 'moira', 'tessa',
+  'fiona', 'victoria', 'zoe', 'kate', 'nicky', 'aria', 'jenny', 'michelle',
+  'zira', 'hazel', 'sonia', 'libby', 'joanna', 'salli', 'kendra', 'nora',
+  'female', 'woman',
+];
+
+function loadVoiceSettings() {
+  try {
+    return { ...defaultVoiceSettings, ...JSON.parse(localStorage.getItem(VOICE_KEY) || '{}') };
+  } catch {
+    return { ...defaultVoiceSettings };
+  }
+}
+function saveVoiceSettings() {
+  localStorage.setItem(VOICE_KEY, JSON.stringify(voiceSettings));
+}
+
+function isLikelyFemale(v) {
+  const n = v.name.toLowerCase();
+  return FEMALE_HINTS.some((h) => n.includes(h));
+}
+
+// Strip markdown so the voice doesn't read "asterisk asterisk" etc.
+function stripMarkdown(t) {
+  return t
+    .replace(/[*_`#>]/g, '')
+    .replace(/^\s*[-•]\s*/gm, '')
+    .replace(/\s{2,}/g, ' ');
+}
+
+function refreshVoices() {
+  const all = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  const english = all.filter((v) => /^en/i.test(v.lang));
+  const pool = english.length ? english : all;
+  // Female-preferred, then alphabetical.
+  availableVoices = pool.slice().sort((a, b) => {
+    const fa = isLikelyFemale(a) ? 0 : 1;
+    const fb = isLikelyFemale(b) ? 0 : 1;
+    return fa !== fb ? fa - fb : a.name.localeCompare(b.name);
+  });
+  // Auto-pick a good female voice if none chosen / previous one is gone.
+  const stillValid = availableVoices.some((v) => v.voiceURI === voiceSettings.voiceURI);
+  if (!voiceSettings.voiceURI || !stillValid) {
+    const pick = availableVoices.find(isLikelyFemale) || availableVoices[0];
+    if (pick) {
+      voiceSettings.voiceURI = pick.voiceURI;
+      saveVoiceSettings();
+    }
+  }
+  populateVoiceSelect();
+}
+
+function populateVoiceSelect() {
+  const sel = document.getElementById('voice-select');
+  if (!sel) return;
+  sel.innerHTML = '';
+  for (const v of availableVoices) {
+    const opt = document.createElement('option');
+    opt.value = v.voiceURI;
+    opt.textContent = (isLikelyFemale(v) ? '★ ' : '') + v.name + ' (' + v.lang + ')';
+    if (v.voiceURI === voiceSettings.voiceURI) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
 function speak(text) {
-  if (!window.speechSynthesis || !text) return;
+  if (!voiceSettings.enabled || !window.speechSynthesis || !text) return;
   try {
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text.slice(0, 600));
-    u.rate = 1.05;
+    const u = new SpeechSynthesisUtterance(stripMarkdown(text).slice(0, 600));
+    const v = availableVoices.find((x) => x.voiceURI === voiceSettings.voiceURI);
+    if (v) u.voice = v;
+    u.rate = voiceSettings.rate;
+    u.pitch = voiceSettings.pitch;
     window.speechSynthesis.speak(u);
   } catch {
     /* ignore */
   }
+}
+
+function setupSettings() {
+  const modal = el('settings');
+  const enabled = el('voice-enabled');
+  const sel = el('voice-select');
+  const rate = el('voice-rate');
+  const pitch = el('voice-pitch');
+  const rateVal = el('rate-val');
+  const pitchVal = el('pitch-val');
+  const hint = el('voice-hint');
+
+  enabled.checked = voiceSettings.enabled;
+  rate.value = voiceSettings.rate;
+  rateVal.textContent = Number(voiceSettings.rate).toFixed(2) + 'x';
+  pitch.value = voiceSettings.pitch;
+  pitchVal.textContent = Number(voiceSettings.pitch).toFixed(2);
+
+  hint.textContent = !window.speechSynthesis
+    ? 'This browser has no built-in voices.'
+    : 'Tip: on iPhone, download an "Enhanced/Premium" voice under Settings → Accessibility → Spoken Content → Voices for the most natural sound, then pick it here.';
+
+  el('settings-btn').addEventListener('click', () => {
+    refreshVoices();
+    modal.classList.remove('hidden');
+  });
+  el('settings-close').addEventListener('click', () => modal.classList.add('hidden'));
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.add('hidden');
+  });
+
+  enabled.addEventListener('change', () => {
+    voiceSettings.enabled = enabled.checked;
+    saveVoiceSettings();
+  });
+  sel.addEventListener('change', () => {
+    voiceSettings.voiceURI = sel.value;
+    saveVoiceSettings();
+  });
+  rate.addEventListener('input', () => {
+    voiceSettings.rate = parseFloat(rate.value);
+    rateVal.textContent = voiceSettings.rate.toFixed(2) + 'x';
+    saveVoiceSettings();
+  });
+  pitch.addEventListener('input', () => {
+    voiceSettings.pitch = parseFloat(pitch.value);
+    pitchVal.textContent = voiceSettings.pitch.toFixed(2);
+    saveVoiceSettings();
+  });
+  el('voice-preview').addEventListener('click', () => {
+    const prev = voiceSettings.enabled;
+    voiceSettings.enabled = true;
+    speak("Hi — I'm your HVAC assistant. This is how I'll read your schedule to you.");
+    voiceSettings.enabled = prev;
+  });
 }
 
 // --- Rendering assistant results -------------------------------------------
@@ -357,6 +488,11 @@ el('login-form').addEventListener('submit', async (e) => {
 });
 
 setupVoice();
+setupSettings();
+if (window.speechSynthesis) {
+  refreshVoices();
+  window.speechSynthesis.addEventListener('voiceschanged', refreshVoices);
+}
 init();
 
 // Register service worker for installability (best-effort).
