@@ -67,6 +67,31 @@ Never commit `.env` — it's already in `.gitignore`.
 
 ---
 
+## Deploy (easiest: Render)
+
+Get it always‑on for your phone in a few minutes — no CLI, no Docker. The repo
+includes a `render.yaml` blueprint.
+
+1. Go to https://dashboard.render.com and sign in with GitHub.
+2. **New → Blueprint**, then connect this repository and pick the branch that
+   has the code. Render reads `render.yaml` and sets up the web service.
+3. When prompted, paste the three secret values (they're stored in Render, never
+   in the repo):
+   - `ANTHROPIC_API_KEY`
+   - `HOUSECALL_API_KEY`
+   - `APP_PASSWORD` (make one up — it's your app login)
+4. Click **Apply / Create**. Render builds and gives you an `https://…onrender.com`
+   URL. Open it on your phone and **Add to Home Screen**.
+
+Render injects `PORT` automatically and the app listens on it. The free plan
+spins down when idle (the first request after a nap takes ~30–60s to wake);
+upgrade the instance if you want it always warm. `autoDeploy` is on, so pushing
+new commits redeploys automatically.
+
+> Other hosts work the same way — Railway (dashboard, set the same env vars) or
+> Fly.io (`fly launch` → `fly secrets set …` → `fly deploy`). The key always
+> lives in the host's secrets, never in the repo.
+
 ## Using it on your phone
 
 1. Serve it over HTTPS on a host your phone can reach (a small VM, Fly.io,

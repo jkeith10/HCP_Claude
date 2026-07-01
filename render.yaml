@@ -1,0 +1,31 @@
+# Render Blueprint — deploys the HVAC assistant as a web service.
+# Render auto-detects Node, runs the build/start commands below, and injects
+# the PORT the app listens on. Fill in the three secret env vars in the
+# dashboard when prompted (they are never stored in this repo).
+#
+# One-time setup: https://dashboard.render.com  ->  New  ->  Blueprint  ->
+# connect this GitHub repo. Render reads this file and creates the service.
+
+services:
+  - type: web
+    name: hvac-assistant
+    runtime: node
+    plan: free # free spins down when idle (slow first request); upgrade for always-on
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/config
+    autoDeploy: true # redeploy automatically when you push to the connected branch
+    envVars:
+      # --- Secrets: sync:false means Render prompts you for these and keeps
+      #     them out of the repo. Paste your real keys in the dashboard. ---
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: HOUSECALL_API_KEY
+        sync: false
+      - key: APP_PASSWORD
+        sync: false
+      # --- Non-secret defaults ---
+      - key: ANTHROPIC_MODEL
+        value: claude-opus-4-8
+      - key: HOUSECALL_API_BASE
+        value: https://api.housecallpro.com
