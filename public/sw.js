@@ -1,6 +1,6 @@
 // Minimal service worker: caches the static shell so the app is installable
 // and loads fast. API calls are always network (never cached).
-const CACHE = 'hvac-shell-v1';
+const CACHE = 'hvac-shell-v2';
 const SHELL = ['/', '/index.html', '/styles.css', '/app.js', '/manifest.webmanifest', '/icon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -20,7 +20,17 @@ self.addEventListener('fetch', (event) => {
   // Never cache API traffic.
   if (url.pathname.startsWith('/api/')) return;
   if (event.request.method !== 'GET') return;
+
+  // Network-first: always try to fetch the latest, fall back to cache offline.
+  // This guarantees new deploys (e.g. updated app.js) show up immediately
+  // instead of being pinned to a stale cached copy.
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request)),
+    fetch(event.request)
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(event.request, copy)).catch(() => {});
+        return res;
+      })
+      .catch(() => caches.match(event.request)),
   );
 });
