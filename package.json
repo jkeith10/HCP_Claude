@@ -1,0 +1,20 @@
+{
+  "name": "hvac-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Standalone mobile HVAC assistant that acts in a Housecall Pro account via its REST API, powered by Claude.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node test/e2e.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}
